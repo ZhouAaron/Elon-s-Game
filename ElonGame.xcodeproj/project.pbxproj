@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4A0211E427E30A9E0017114E /* playStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0211E327E30A9E0017114E /* playStateMachine.swift */; };
 		4AFE079E27DB53D90016757D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFE079D27DB53D90016757D /* AppDelegate.swift */; };
 		4AFE07A027DB53D90016757D /* GameScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = 4AFE079F27DB53D90016757D /* GameScene.sks */; };
 		4AFE07A227DB53D90016757D /* Actions.sks in Resources */ = {isa = PBXBuildFile; fileRef = 4AFE07A127DB53D90016757D /* Actions.sks */; };
@@ -18,6 +19,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4A0211E327E30A9E0017114E /* playStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = playStateMachine.swift; sourceTree = "<group>"; };
 		4AFE079A27DB53D90016757D /* ElonGame.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ElonGame.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4AFE079D27DB53D90016757D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		4AFE079F27DB53D90016757D /* GameScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GameScene.sks; sourceTree = "<group>"; };
@@ -62,6 +64,7 @@
 				4AFE079D27DB53D90016757D /* AppDelegate.swift */,
 				4AFE079F27DB53D90016757D /* GameScene.sks */,
 				4AFE07A127DB53D90016757D /* Actions.sks */,
+				4A0211E327E30A9E0017114E /* playStateMachine.swift */,
 				4AFE07A327DB53D90016757D /* GameScene.swift */,
 				4AFE07A527DB53D90016757D /* GameViewController.swift */,
 				4AFE07A727DB53D90016757D /* Main.storyboard */,
@@ -145,6 +148,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4AFE07A427DB53D90016757D /* GameScene.swift in Sources */,
+				4A0211E427E30A9E0017114E /* playStateMachine.swift in Sources */,
 				4AFE07A627DB53D90016757D /* GameViewController.swift in Sources */,
 				4AFE079E27DB53D90016757D /* AppDelegate.swift in Sources */,
 			);
