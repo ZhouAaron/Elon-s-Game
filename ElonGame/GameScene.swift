@@ -51,6 +51,9 @@ class GameScene: SKScene {
         
         physicsWorld.contactDelegate = self
         
+        let soundAction = SKAction.repeatForever(SKAction.playSoundFileNamed("music.wav", waitForCompletion: false))
+        run(soundAction)
+        
         player = childNode(withName: "player")
         joystick = childNode(withName: "joystick")
         joystickKnob = joystick?.childNode(withName: "knob")
@@ -105,6 +108,7 @@ extension GameScene {
             let location = touch.location(in: self)
             if !(joystick?.contains(location))! {
                 playerStateMachine.enter(JumpingState.self)
+                run(Sound.jump.action)
             }
         }
     }
@@ -182,6 +186,7 @@ extension GameScene {
             }
             else {
                 dying()
+                showDieScene()
             }
             invincible()
         }
@@ -199,6 +204,11 @@ extension GameScene {
         player?.run(dieAction)
         self.removeAllActions()
         fillHearts(count: 3)
+    }
+    
+    func showDieScene() {
+        let gameOverScene = GameScene(fileNamed: "GameOver")
+        self.view?.presentScene(gameOverScene)
     }
 }
 
@@ -289,6 +299,7 @@ extension GameScene: SKPhysicsContactDelegate {
             
             loseHeart()
             isHit = true
+            run(Sound.hit.action)
             
             playerStateMachine.enter(StunnedState.self)
         }
@@ -311,6 +322,7 @@ extension GameScene: SKPhysicsContactDelegate {
                 rewardTouch()
                 rewardIsNotTouched = false
             }
+            run(Sound.reward.action)
         }
         
         if collision.matches(.ground, .killing) {
@@ -323,6 +335,7 @@ extension GameScene: SKPhysicsContactDelegate {
                 createMolten(at: meteor.position)
                 meteor.removeFromParent()
             }
+            run(Sound.meteorFalling.action)
         }
     }
 }
