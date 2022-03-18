@@ -25,6 +25,7 @@ class GameScene: SKScene {
     // Boolean
     var joystickAction = false
     var rewardIsNotTouched = true
+    var isHit = false
     
     // Measure
     var knobRadius : CGFloat = 50.0
@@ -32,6 +33,10 @@ class GameScene: SKScene {
     // Score
     let scoreLabel = SKLabelNode()
     var score = 0
+    
+    // Hearts
+    var heartsArray = [SKSpriteNode]()
+    let heartContainer = SKSpriteNode()
     
     // Sprite Engine
     var previousTimeInterval : TimeInterval = 0
@@ -57,21 +62,28 @@ class GameScene: SKScene {
         stars = childNode(withName: "stars")
         
         playerStateMachine = GKStateMachine(states: [
-            JumpIngState(playerNode: player!),
+            JumpingState(playerNode: player!),
             WalkingState(playerNode: player!),
             IdleState(playerNode: player!),
             LandingState(playerNode: player!),
             StunnedState(playerNode: player!),
-        ])
-    playerStateMachine.enter(IdleState.self)
+            ])
+        
+        playerStateMachine.enter(IdleState.self)
+        
+        // Hearts
+        heartContainer.position = CGPoint(x: -300, y: 140)
+        heartContainer.zPosition = 5
+        cameraNode?.addChild(heartContainer)
+        fillHearts(count: 3)
         
         // Timer
-        Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { (timer) in
+        Timer.scheduledTimer(withTimeInterval: 2, repeats: true) {(timer) in
             self.spawnMeteor()
         }
         
         scoreLabel.position = CGPoint(x: (cameraNode?.position.x)! + 310, y: 140)
-        scoreLabel.fontColor = .orange
+        scoreLabel.fontColor = #colorLiteral(red: 0.9529411793, green: 0.6862745285, blue: 0.1333333403, alpha: 1)
         scoreLabel.fontSize = 24
         scoreLabel.fontName = "AvenirNext-Bold"
         scoreLabel.horizontalAlignmentMode = .right
@@ -92,7 +104,7 @@ extension GameScene {
             
             let location = touch.location(in: self)
             if !(joystick?.contains(location))! {
-                playerStateMachine.enter(JumpIngState.self)
+                playerStateMachine.enter(JumpingState.self)
             }
         }
     }
@@ -146,6 +158,48 @@ extension GameScene {
         score += 1
         scoreLabel.text = String(score)
     }
+    
+    func fillHearts(count: Int) {
+        for index in 1...count {
+            let heart = SKSpriteNode(imageNamed: "heart")
+            let xPosition = heart.size.width * CGFloat(index - 1)
+            heart.position = CGPoint(x: xPosition, y: 0)
+            heartsArray.append(heart)
+            heartContainer.addChild(heart)
+        }
+    }
+    
+    func loseHeart() {
+        if isHit == true {
+            let lastElementIndex = heartsArray.count - 1
+            if heartsArray.indices.contains(lastElementIndex - 1) {
+                let lastHeart = heartsArray[lastElementIndex]
+                lastHeart.removeFromParent()
+                heartsArray.remove(at: lastElementIndex)
+                Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { (timer) in
+                    self.isHit = false
+                }
+            }
+            else {
+                dying()
+            }
+            invincible()
+        }
+    }
+    
+    func invincible() {
+        player?.physicsBody?.categoryBitMask = 0
+        Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { (timer) in
+            self.player?.physicsBody?.categoryBitMask = 2
+        }
+    }
+    
+    func dying() {
+        let dieAction = SKAction.move(to: CGPoint(x: -300, y: 0), duration: 0.1)
+        player?.run(dieAction)
+        self.removeAllActions()
+        fillHearts(count: 3)
+    }
 }
 
 // MARK: Game Loop
@@ -171,7 +225,6 @@ extension GameScene {
         } else {
             playerStateMachine.enter(IdleState.self)
         }
-        
         let displacement = CGVector(dx: deltaTime * xPosition * playerSpeed, dy: 0)
         let move = SKAction.move(by: displacement, duration: 0)
         let faceAction : SKAction!
@@ -192,13 +245,14 @@ extension GameScene {
         player?.run(faceAction)
         
         // Background Parallax
-        let parallax1 = SKAction.moveTo(x: (player?.position.x)!/(-10), duration: 0.0)
+        
+        let parallax1 = SKAction.moveTo(x: (player?.position.x)!/(10), duration: 0.0)
         mountains1?.run(parallax1)
         
-        let parallax2 = SKAction.moveTo(x: (player?.position.x)!/(-20), duration: 0.0)
+        let parallax2 = SKAction.moveTo(x: (player?.position.x)!/(20), duration: 0.0)
         mountains2?.run(parallax2)
         
-        let parallax3 = SKAction.moveTo(x: (player?.position.x)!/(-40), duration: 0.0)
+        let parallax3 = SKAction.moveTo(x: (player?.position.x)!/(40), duration: 0.0)
         mountains3?.run(parallax3)
         
         let parallax4 = SKAction.moveTo(x: (cameraNode?.position.x)!, duration: 0.0)
@@ -206,33 +260,40 @@ extension GameScene {
         
         let parallax5 = SKAction.moveTo(x: (cameraNode?.position.x)!, duration: 0.0)
         stars?.run(parallax5)
-         
     }
 }
 
 // MARK: Collision
 extension GameScene: SKPhysicsContactDelegate {
+    
     struct Collision {
+        
         enum Masks: Int {
-            case killing, player, reward, groud
+            case killing, player, reward, ground
             var bitmask: UInt32 { return 1 << self.rawValue }
         }
         
         let masks: (first: UInt32, second: UInt32)
         
         func matches (_ first: Masks, _ second: Masks) -> Bool {
-            return (first.bitmask == masks.first && second.bitmask == masks.second) || (first.bitmask == masks.second && second.bitmask == masks.first)
+            return (first.bitmask == masks.first && second.bitmask == masks.second) ||
+            (first.bitmask == masks.second && second.bitmask == masks.first)
         }
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
+        
         let collision = Collision(masks: (first: contact.bodyA.categoryBitMask, second: contact.bodyB.categoryBitMask))
         
         if collision.matches(.player, .killing) {
-            let die = SKAction.move(to: CGPoint(x: -300, y: -100), duration: 0.0)
-            player?.run(die)
+            
+            loseHeart()
+            isHit = true
+            
+            playerStateMachine.enter(StunnedState.self)
         }
-        if collision.matches(.player, .groud) {
+        
+        if collision.matches(.player, .ground) {
             playerStateMachine.enter(LandingState.self)
         }
         
@@ -241,19 +302,23 @@ extension GameScene: SKPhysicsContactDelegate {
             if contact.bodyA.node?.name == "jewel" {
                 contact.bodyA.node?.physicsBody?.categoryBitMask = 0
                 contact.bodyA.node?.removeFromParent()
-            } else if contact.bodyB.node?.name == "jewel" {
+            }
+            else if contact.bodyB.node?.name == "jewel" {
                 contact.bodyB.node?.physicsBody?.categoryBitMask = 0
             }
+            
             if rewardIsNotTouched {
                 rewardTouch()
                 rewardIsNotTouched = false
             }
         }
-        if collision.matches(.groud, .killing) {
+        
+        if collision.matches(.ground, .killing) {
             if contact.bodyA.node?.name == "Meteor", let meteor = contact.bodyA.node {
                 createMolten(at: meteor.position)
                 meteor.removeFromParent()
             }
+            
             if contact.bodyB.node?.name == "Meteor", let meteor = contact.bodyB.node {
                 createMolten(at: meteor.position)
                 meteor.removeFromParent()
@@ -264,27 +329,29 @@ extension GameScene: SKPhysicsContactDelegate {
 
 // MARK: Meteor
 extension GameScene {
+    
     func spawnMeteor() {
+        
         let node = SKSpriteNode(imageNamed: "meteor")
         node.name = "Meteor"
         let randomXPosition = Int(arc4random_uniform(UInt32(self.size.width)))
         
-        node.position = CGPoint(x: randomXPosition, y:  270)
+        node.position = CGPoint(x: randomXPosition, y: 270)
         node.anchorPoint = CGPoint(x: 0.5, y: 1)
         node.zPosition = 5
         
-        let phsicsBody = SKPhysicsBody(circleOfRadius: 30)
-        node.physicsBody = phsicsBody
+        let physicsBody = SKPhysicsBody(circleOfRadius: 30)
+        node.physicsBody = physicsBody
         
-        phsicsBody.categoryBitMask = Collision.Masks.killing.bitmask
-        phsicsBody.collisionBitMask = Collision.Masks.player.bitmask | Collision.Masks.groud.bitmask
-        phsicsBody.contactTestBitMask = Collision.Masks.player.bitmask | Collision.Masks.groud.bitmask
-        phsicsBody.fieldBitMask = Collision.Masks.player.bitmask | Collision.Masks.groud.bitmask
+        physicsBody.categoryBitMask = Collision.Masks.killing.bitmask
+        physicsBody.collisionBitMask = Collision.Masks.player.bitmask | Collision.Masks.ground.bitmask
+        physicsBody.contactTestBitMask = Collision.Masks.player.bitmask | Collision.Masks.ground.bitmask
+        physicsBody.fieldBitMask = Collision.Masks.player.bitmask | Collision.Masks.ground.bitmask
         
-        phsicsBody.affectedByGravity = true
-        phsicsBody.allowsRotation = false
-        phsicsBody.restitution = 0.2
-        phsicsBody.friction = 10
+        physicsBody.affectedByGravity = true
+        physicsBody.allowsRotation = false
+        physicsBody.restitution = 0.2
+        physicsBody.friction = 10
         
         addChild(node)
     }
@@ -292,8 +359,9 @@ extension GameScene {
     func createMolten(at position: CGPoint) {
         let node = SKSpriteNode(imageNamed: "molten")
         node.position.x = position.x
-        node.position.y = position.y - 60
+        node.position.y = position.y - 110
         node.zPosition = 4
+        
         addChild(node)
         
         let action = SKAction.sequence([
@@ -301,10 +369,9 @@ extension GameScene {
             SKAction.wait(forDuration: 3.0),
             SKAction.fadeOut(withDuration: 0.2),
             SKAction.removeFromParent(),
-        ])
+            ])
         
         node.run(action)
-        
     }
 }
 
