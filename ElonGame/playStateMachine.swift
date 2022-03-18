@@ -19,8 +19,8 @@ class PlayerState: GKState {
 class JumpIngState : PlayerState {
     var hasFinishedJumping : Bool = false
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
-//        if hasFinishedJumping && stateClass is LandingState.Type { return true}
-        return true
+        if hasFinishedJumping && stateClass is LandingState.Type { return true}
+        return false
     }
     
     let textures: Array<SKTexture> = (0..<2).map({return "jump/\($0)"}).map(SKTexture.init)
