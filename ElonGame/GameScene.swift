@@ -24,9 +24,14 @@ class GameScene: SKScene {
     
     // Boolean
     var joystickAction = false
+    var rewardIsNotTouched = true
     
     // Measure
     var knobRadius : CGFloat = 50.0
+    
+    // Score
+    let scoreLabel = SKLabelNode()
+    var score = 0
     
     // Sprite Engine
     var previousTimeInterval : TimeInterval = 0
@@ -64,6 +69,14 @@ class GameScene: SKScene {
         Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { (timer) in
             self.spawnMeteor()
         }
+        
+        scoreLabel.position = CGPoint(x: (cameraNode?.position.x)! + 310, y: 140)
+        scoreLabel.fontColor = .orange
+        scoreLabel.fontSize = 24
+        scoreLabel.fontName = "AvenirNext-Bold"
+        scoreLabel.horizontalAlignmentMode = .right
+        scoreLabel.text = String(score)
+        cameraNode?.addChild(scoreLabel)
     }
 }
 
@@ -120,12 +133,18 @@ extension GameScene {
 
 // MARK: Action
 extension GameScene {
+    
     func resetKnobPosition() {
         let initialPoint = CGPoint(x: 0, y: 0)
         let moveBack = SKAction.move(to: initialPoint, duration: 0.1)
         moveBack.timingMode = .linear
         joystickKnob?.run(moveBack)
         joystickAction = false
+    }
+    
+    func rewardTouch() {
+        score += 1
+        scoreLabel.text = String(score)
     }
 }
 
@@ -134,6 +153,9 @@ extension GameScene {
     override func update(_ currentTime: TimeInterval) {
         let deltaTime = currentTime - previousTimeInterval
         previousTimeInterval = currentTime
+        
+        rewardIsNotTouched = true
+        
         // Camera
         cameraNode?.position.x = player!.position.x
         joystick?.position.y = (cameraNode?.position.y)! - 100
@@ -212,6 +234,20 @@ extension GameScene: SKPhysicsContactDelegate {
         }
         if collision.matches(.player, .groud) {
             playerStateMachine.enter(LandingState.self)
+        }
+        
+        if collision.matches(.player, .reward) {
+            
+            if contact.bodyA.node?.name == "jewel" {
+                contact.bodyA.node?.physicsBody?.categoryBitMask = 0
+                contact.bodyA.node?.removeFromParent()
+            } else if contact.bodyB.node?.name == "jewel" {
+                contact.bodyB.node?.physicsBody?.categoryBitMask = 0
+            }
+            if rewardIsNotTouched {
+                rewardTouch()
+                rewardIsNotTouched = false
+            }
         }
         if collision.matches(.groud, .killing) {
             if contact.bodyA.node?.name == "Meteor", let meteor = contact.bodyA.node {
